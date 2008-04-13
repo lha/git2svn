@@ -304,7 +304,8 @@ COMMAND: while (!eof(IN)) {
 		    # and removed when done.
 		}
 
-		checkdirs("$basedir/$path");
+		$path = "$basedir/$path";
+		checkdirs($path);
 
 		my $action = "add";
 
@@ -329,7 +330,7 @@ COMMAND: while (!eof(IN)) {
 		my $plen = length($props);
 		my $clen = length($content);
 
-		printf OUT "Node-path: $basedir/$path\n";
+		printf OUT "Node-path: $path\n";
 		printf OUT "Node-kind: $kind\n";
 		printf OUT "Node-action: $action\n";
 		printf OUT "Text-content-length: $clen\n";
@@ -342,16 +343,17 @@ COMMAND: while (!eof(IN)) {
 		print OUT $content;
 		printf OUT "\n";
 	    } elsif ($next =~ m/D (.*)/) {
-		my $path = $1;
+		my $path = $basedir . "/". $1;
 
-		die "deleting non existing object: $path" 
-		    unless ($paths{$path});
-
-		delete $paths{$path};
-
-		printf OUT "Node-path: $basedir/$path\n";
-		printf OUT "Node-action: delete\n";
-		printf OUT "\n";
+		if ($paths{$path}) {
+		    delete $paths{$path};
+		    
+		    printf OUT "Node-path: $path\n";
+		    printf OUT "Node-action: delete\n";
+		    printf OUT "\n";
+		} else if ($verbose) {
+		    print STDERR "deleting non existing object: $path\n";
+		}
 
 	    } elsif ($next =~ m/^C (.*)/) {
 		die "file copy ?";

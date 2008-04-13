@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+#
 #    git2svn, converts a git branch to a svn ditto
 #    Copyright (C) 2008  Love Hörnquist Åstrand
 #
@@ -24,6 +25,7 @@ my $OUT;
 # svn
 my $svntree = "repro";
 my $basedir = "trunk";
+my $revision = 1;
 
 # git
 my $branch = "master";
@@ -32,8 +34,6 @@ my $syncname;
 my $masterrev;
 my $fexport;
 
-
-my $revision = 1;
 
 my %blob;
 my %paths;
@@ -46,6 +46,7 @@ sub read_data
     
     $l = read(IN, $data, $length);
     unless ($l == $length) { die "failed to read data $l != $length"; }
+    $data = "" if ($length == 0);
     return $data;
 }
 
@@ -88,6 +89,7 @@ sub parse_git_tree
     $masterrev= `cat ${gittree}/.git/refs/heads/${branch}`;
     chomp($masterrev);
 
+    die "No head found for ${branch}" if ($masterrev eq "");
 
     my $syncpoint="${gittree}/.git/refs/tags/${syncname}";
 
@@ -255,8 +257,15 @@ COMMAND: while (!eof(IN)) {
 		    $next = next_line($IN);
 		    $content = read_data($IN, $next);
 		} else {
+		    die "Revision missing content ref $dataref" 
+			unless(defined $blob{$dataref});
+
 		    $content = $blob{$dataref};
-		    delete $blob{$dataref};
+		    # here we really want to delete $blob{$dataref},
+		    # but it might be referenced in the future. To
+		    # avoid keepig everything in memory for larger
+		    # repositories this must be written out to disk
+		    # and removed when done.
 		}
 
 		checkdirs("$basedir/$path");

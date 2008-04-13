@@ -1,0 +1,21 @@
+
+git2svn
+
+A tool to convert git branches to svn ditto. One usage to to make it
+easier to people to migrate from svn and still use old svn tools (like
+fisheye).
+
+Usage:
+
+	git2svn path-to-dir-with-.git-file path-to-svnrepro
+
+Example:
+
+	./git2svn /Users/lha/src/heimdal/git-trunk repro
+
+
+Missing:
+
+	Command argument parser for branch and basedir specificition
+	(backend code is already there).
+

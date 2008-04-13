@@ -1,0 +1,355 @@
+#!/usr/bin/perl
+#    git2svn, converts a git branch to a svn ditto
+#    Copyright (C) 2008  Love Hörnquist Åstrand
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+use strict;
+use POSIX qw(strftime);
+
+my $IN;
+my $OUT;
+
+# svn
+my $svntree = "repro";
+my $basedir = "trunk";
+
+# git
+my $branch = "master";
+my $gittree;
+my $syncname;
+my $masterrev;
+my $fexport;
+
+
+my $revision = 1;
+
+my %blob;
+my %paths;
+
+sub read_data
+{
+    my ($IN, $next, $length, $data, $l) = (shift, shift);
+    unless($next =~ m/^data (\d+)/) { die "missing data: $next" ; }
+    $length = $1;
+    
+    $l = read(IN, $data, $length);
+    unless ($l == $length) { die "failed to read data $l != $length"; }
+    return $data;
+}
+
+sub prop
+{
+    my ($key, $value) = (shift, shift);
+    "K " . length($key) . "\n$key\nV " . length($value) . "\n$value\n";
+}
+
+sub parse_svn_tree
+{
+    my $url = shift;
+    my ($SVN, $type, $name);
+
+    open(SVN, "svn ls -R $url|") or die "failed to open svn ls -R $url";
+    while (<SVN>) {
+	if (m@/(.*)/$@) {
+	    $type = 1;
+	    $name = "$basedir/$1";
+	} else {
+	    $type = 2;
+	    $name = "$basedir/$_";
+	}
+	$paths{$name} = $type;
+    }
+    close SVN;
+
+    open(SVN, "svn info $url|") or die "failed to open svn info $url";
+    while (<SVN>) {
+	if (/^Revision: (\d+)/) {
+	    $revision = $1 + 1;
+	    last;
+	}
+    }
+    close SVN;
+}
+
+sub parse_git_tree
+{
+    $masterrev= `cat ${gittree}/.git/refs/heads/${branch}`;
+    chomp($masterrev);
+
+
+    my $syncpoint="${gittree}/.git/refs/tags/${syncname}";
+
+    if (-f ${syncpoint}) {
+	my $oldmasterrev=`cat ${syncpoint}`;
+	chomp($oldmasterrev);
+
+	if (${oldmasterrev} eq ${masterrev}) {
+	    print STDERR "nothing to sync\n";
+	    exit 0;
+	}
+
+	die "no $svntree, but incremental ? ".
+	    "(delete tag $syncname to restart)" unless ( -d $svntree);
+
+	$fexport = "$oldmasterrev..$masterrev";
+    } else {
+	$fexport="${masterrev}";
+
+	system("svnadmin create ./$svntree") unless (-d $svntree);
+    }
+}
+
+
+sub checkdirs
+{
+    my $path = shift;
+    my $base = "";
+
+    # pick first dir, create, take next dir, continue until we reached basename
+    while ($path =~ m@^([^/]+)/(.*)$@) {
+	my $first = $base . $1;
+	$path = $2;
+	$base = $first . "/";
+	next if ($paths{$first});
+
+	$paths{$first} = 1;
+
+	printf OUT "Node-path: $first\n";
+	printf OUT "Node-kind: dir\n";
+	printf OUT "Node-action: add\n";
+	printf OUT "Prop-content-length: 0\n";
+	printf OUT "Content-length: 0\n";
+	printf OUT "\n";
+    }
+}
+
+sub next_line
+{
+    my $IN = shift;
+    my $next = <IN>;
+    chomp $next;
+    return $next;
+}
+
+$|= 1;
+
+# parse arguments here ....
+
+die "to few arguments" if ($#ARGV < 1);
+
+mkdir ".data" unless (-d ".data");
+
+$syncname = "git2svn-syncpoint-${branch}";
+
+my $gitdump = ".data/git.dump-${branch}";
+my $svndump = ".data/svn.dump-${branch}";
+my $log = "log-${branch}";
+
+
+$gittree = $ARGV[0];
+$svntree = $ARGV[1];
+
+parse_git_tree($gittree);
+
+my $cwd = `pwd`;
+chomp($cwd);
+parse_svn_tree("file://" . $cwd ."/". $svntree);
+
+system(">$log");
+
+print STDERR "git fast-export $branch ($fexport)\n";
+
+system("(cd $gittree && git fast-export $fexport) > $gitdump 2>$log") == 0 or
+    die "git fast-export: $!";
+
+open IN, "$gitdump" or
+    die "failed to open $gitdump";
+
+open OUT, ">$svndump" or 
+    die "failed to open $svndump";
+
+print STDERR "creating svn dump from revision $revision...\n";
+
+print OUT "SVN-fs-dump-format-version: 3\n";
+
+my $next = next_line();
+COMMAND: while (!eof(IN)) {
+    my $mark = undef;
+    if ($next eq "") {
+	$next = next_line($IN);
+	next COMMAND;
+    } elsif ($next =~ /^commit (.*)/) {
+
+	my %commit;
+
+	$next = next_line($IN);
+	if ($next =~ m/mark (.*)/) {
+	    $mark = $1;
+	    $next = next_line($IN);
+	}
+	if ($next =~ m/author (.*)/) {
+	    $commit{author} = $1;
+	    $next = next_line($IN);
+	}
+	unless ($next =~ m/committer (.+) <([^>]+)> (\d+) \+(\d+)$/) {
+	    die "missing comitter" 
+	}
+
+	$commit{CommitterName} = $1;
+	$commit{CommitterEmail} = $2;
+	$commit{CommitterWhen} = $3;
+	$commit{CommitterTZ} = $4;
+
+	$next = next_line($IN);
+	my $log = read_data($IN, $next);
+
+	$next = next_line($IN);
+	if ($next =~ m/from (.*)/) {
+	    $next = next_line($IN);
+	}
+	if ($next =~ m/merge (.*)/) {
+	    $next = next_line($IN);
+	}
+
+	my $date = 
+	    strftime("%Y-%m-%dT%H:%M:%S.000000Z", 
+		     gmtime($commit{CommitterWhen}));
+
+	my $author = "(no author)";
+	if ($commit{CommitterEmail} =~ m/([^@]+)/) {
+	    $author = $1;
+	}
+	$author = "git2svn-dump" if ($author eq "(no author)");
+
+	my $props = "";
+	$props .= prop("svn:author", $author);
+	$props .= prop("svn:log", $log);
+	$props .= prop("svn:date", $date);
+	$props .= "PROPS-END";
+
+	# push out svn info
+
+	printf OUT "Revision-number: $revision\n"; $revision++;
+	printf OUT "Prop-content-length: ". length($props) . "\n";
+	printf OUT "Content-length: " . length($props) . "\n";
+	printf OUT "\n";
+	print OUT "$props\n";
+
+	while (1) {
+	    if ($next =~ m/M (\d+) (\S+) (.*)$/) {
+		my ($mode, $dataref, $path) = (oct $1, $2, $3);
+		my $content;
+		if ($dataref eq "inline") {
+		    $next = next_line($IN);
+		    $content = read_data($IN, $next);
+		} else {
+		    $content = $blob{$dataref};
+		    delete $blob{$dataref};
+		}
+
+		checkdirs("$basedir/$path");
+
+		my $action = "add";
+
+		if ($paths{$path}) {
+		    die "file was a dir" if ($paths{$path} != 2);
+		    $action = "change";
+		} else {
+		    $paths{$path} = 2;
+		}
+
+
+		my $type = $mode & 0777000;
+		my $kind = "";
+		$kind = "file" if ($type == 0100000);
+		$kind = "symlink" if ($type == 0120000);
+		die "$type unknown" if ($kind eq "");
+
+		$props = "";
+		$props .= prop("svn:executable", "on") if ($mode & 0111);
+
+		my $plen = length($props);
+		my $clen = length($content);
+
+		printf OUT "Node-path: $basedir/$path\n";
+		printf OUT "Node-kind: $kind\n";
+		printf OUT "Node-action: $action\n";
+		printf OUT "Text-content-length: $clen\n";
+		printf OUT "Content-length: " . ($clen + $plen) . "\n";
+		printf OUT "Prop-content-length: $plen\n" if ($plen);
+		printf OUT "\n";
+		
+		print OUT "$props\n" if ($plen);
+
+		print OUT $content;
+		printf OUT "\n";
+	    } elsif ($next =~ m/D (.*)/) {
+		my $path = $1;
+
+		die "deleting non existing object" unless ($paths{$path});
+
+		delete $paths{$path};
+
+		printf OUT "Node-path: $basedir/$path\n";
+		printf OUT "Node-action: delete\n";
+		printf OUT "\n";
+
+	    } elsif ($next =~ m/^C (.*)/) {
+		die "file copy ?";
+	    } elsif ($next =~ m/^R (.*)/) {
+		die "file rename ?";
+	    } elsif ($next =~ m/^filedeleteall$/) {
+		die "file delete all ?";
+	    } else {
+		next COMMAND;
+	    }
+	    $next = next_line($IN);
+	}
+
+    } elsif ($next =~ /^tag .*/) {
+    } elsif ($next =~ /^reset .*/) {
+    } elsif ($next =~ /^blob/) {
+	$next = next_line($IN);
+	if ($next =~ m/mark (.*)/) {
+	    $mark = $1;
+	    $next = next_line($IN);
+	}
+	my $data = read_data($IN, $next);
+	$blob{$mark} = $data if (defined $mark);
+    } elsif ($next =~ /^checkpoint .*/) {
+    } elsif ($next =~ /^progress (.*)/) {
+	print STDERR "progress: $1\n";
+    } else {
+	die "unknown command $next";
+    }
+    $next = next_line($IN);
+}
+
+close IN;
+close OUT;
+
+print STDERR "(re-)setting sync-tag to new master\n";
+
+system("cd $gittree && ".
+       "git tag -m \"sync $(date)\" -a -f ${syncname} ${masterrev}");
+
+print STDERR "loading dump into svn\n";
+
+system("svnadmin load $svntree < $svndump >>$log 2>&1") == 0 or 
+    die "svnadmin load";
+
+system("rm -f $svndump $gitdump log");
+
+exit 0;

@@ -18,9 +18,13 @@
 
 use strict;
 use POSIX qw(strftime);
+use Getopt::Long qw/:config gnu_getopt no_ignore_case auto_abbrev/;
+use Pod::Usage;
 
 my $IN;
 my $OUT;
+
+my ($help, $verbose);
 
 # svn
 my $svntree = "repro";
@@ -98,7 +102,7 @@ sub parse_git_tree
 	chomp($oldmasterrev);
 
 	if (${oldmasterrev} eq ${masterrev}) {
-	    print STDERR "nothing to sync\n";
+	    print STDERR "nothing to sync\n" if ($verbose);
 	    exit 0;
 	}
 
@@ -148,7 +152,13 @@ sub next_line
 
 $|= 1;
 
-# parse arguments here ....
+my $result;
+$result = GetOptions ("git-branch=s" => \$branch,
+		      "svn-prefix=s" => \$basedir,
+		      "verbose+" => \$verbose,
+		      "help" => \$help) or pod2usage(2);
+
+pod2usage(0) if ($help);
 
 die "to few arguments" if ($#ARGV < 1);
 
@@ -159,7 +169,6 @@ $syncname = "git2svn-syncpoint-${branch}";
 my $gitdump = ".data/git.dump-${branch}";
 my $svndump = ".data/svn.dump-${branch}";
 my $log = ".data/log-${branch}";
-
 
 $gittree = $ARGV[0];
 $svntree = $ARGV[1];
@@ -172,7 +181,7 @@ parse_svn_tree("file://" . $cwd ."/". $svntree);
 
 system(">$log");
 
-print STDERR "git fast-export $branch ($fexport)\n";
+print STDERR "git fast-export $branch ($fexport)\n" if ($verbose);
 
 system("(cd $gittree && git fast-export $fexport) > $gitdump 2>$log") == 0 or
     die "git fast-export: $!";
@@ -183,7 +192,7 @@ open IN, "$gitdump" or
 open OUT, ">$svndump" or 
     die "failed to open $svndump";
 
-print STDERR "creating svn dump from revision $revision...\n";
+print STDERR "creating svn dump from revision $revision...\n" if ($verbose);
 
 print OUT "SVN-fs-dump-format-version: 3\n";
 
@@ -341,7 +350,7 @@ COMMAND: while (!eof(IN)) {
 	$blob{$mark} = $data if (defined $mark);
     } elsif ($next =~ /^checkpoint .*/) {
     } elsif ($next =~ /^progress (.*)/) {
-	print STDERR "progress: $1\n";
+	print STDERR "progress: $1\n" if ($verbose);
     } else {
 	die "unknown command $next";
     }
@@ -351,12 +360,12 @@ COMMAND: while (!eof(IN)) {
 close IN;
 close OUT;
 
-print STDERR "(re-)setting sync-tag to new master\n";
+print STDERR "(re-)setting sync-tag to new master\n" if ($verbose);
 
 system("cd $gittree && ".
        "git tag -m \"sync $(date)\" -a -f ${syncname} ${masterrev}");
 
-print STDERR "loading dump into svn\n";
+print STDERR "loading dump into svn\n" if ($verbose);
 
 system("svnadmin load $svntree < $svndump >>$log 2>&1") == 0 or 
     die "svnadmin load";
@@ -364,3 +373,45 @@ system("svnadmin load $svntree < $svndump >>$log 2>&1") == 0 or
 unlink $svndump, $gitdump, $log;
 
 exit 0;
+
+
+__END__
+
+=head1 NAME
+
+git2svn - converts a git branch to a svn ditto
+
+=head1 SYNOPSIS
+
+git2svn [options] git-repro svn-repro
+
+=head OPTIONS
+
+=over 8
+
+=item B<-git-branch>
+
+The git branch to export. The default is branch is master.
+
+=item B<-svn-prefix>
+
+The svn prefix where the branch is import. The default is trunk to
+match the default GIT branch (master).
+
+=item B<-verbose>
+
+More verbose output, can be give more then once to increase the verbosity.
+
+=item B<-help>
+
+Print a brief help message and exits.
+
+=back
+
+=head1 DESCRIPTION
+
+B<This program> will convert a git branch to a svn ditto, it also
+support incremantal updates.
+
+=cut
+

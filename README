@@ -11,11 +11,7 @@ Usage:
 
 Example:
 
-	./git2svn /Users/lha/src/heimdal/git-trunk repro
-
-
-Missing:
-
-	Command argument parser for branch and basedir specificition
-	(backend code is already there).
-
+	./git2svn ~/src/heimdal svn-repro
+	./git2svn --git-branch heimdal-1-0-branch \
+	          --svn-prefix branches/heimdal-1-0-branch \
+		~/src/heimdal svn-repro

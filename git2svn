@@ -325,13 +325,16 @@ COMMAND: while (!eof(IN)) {
 
 		$props = "";
 		$props .= prop("svn:executable", "on") if ($mode & 0111);
+		$props .= prop("svn:special", "*") if ($kind eq "symlink");
 		$props .= "PROPS-END" if ($props ne "");
+
+		$content = "link $content" if ($kind eq "symlink");
 
 		my $plen = length($props);
 		my $clen = length($content);
 
 		printf OUT "Node-path: $path\n";
-		printf OUT "Node-kind: $kind\n";
+		printf OUT "Node-kind: file\n";
 		printf OUT "Node-action: $action\n";
 		printf OUT "Text-content-length: $clen\n";
 		printf OUT "Content-length: " . ($clen + $plen) . "\n";

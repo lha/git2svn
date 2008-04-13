@@ -24,7 +24,7 @@ use Pod::Usage;
 my $IN;
 my $OUT;
 
-my ($help, $verbose);
+my ($help, $verbose, $no_unlink, $no_load);
 
 # svn
 my $svntree = "repro";
@@ -80,6 +80,7 @@ sub parse_svn_tree
 
     open(SVN, "svn info $url|") or die "failed to open svn info $url";
     while (<SVN>) {
+	chomp;
 	if (/^Revision: (\d+)/) {
 	    $revision = $1 + 1;
 	    last;
@@ -88,10 +89,26 @@ sub parse_svn_tree
     close SVN;
 }
 
+sub find_branch_id
+{
+    my $name = shift;
+
+    foreach my $m ("heads", "remotes") {
+	my $n = "${gittree}/.git/refs/${m}/${name}";
+	my $ID;
+	next unless (-f $n);
+	open FOO, "$n";
+	my $id = <FOO>;
+	chomp($id);
+	close FOO;
+	return $id;
+    }
+    return undef;
+}
+
 sub parse_git_tree
 {
-    $masterrev= `cat ${gittree}/.git/refs/heads/${branch}`;
-    chomp($masterrev);
+    $masterrev = find_branch_id($branch);
 
     die "No head found for ${branch}" if ($masterrev eq "");
 
@@ -100,6 +117,8 @@ sub parse_git_tree
     if (-f ${syncpoint}) {
 	my $oldmasterrev=`cat ${syncpoint}`;
 	chomp($oldmasterrev);
+
+	die "failed to get old parse name" if ($oldmasterrev eq "");
 
 	if (${oldmasterrev} eq ${masterrev}) {
 	    print STDERR "nothing to sync\n" if ($verbose);
@@ -155,6 +174,8 @@ $|= 1;
 my $result;
 $result = GetOptions ("git-branch=s" => \$branch,
 		      "svn-prefix=s" => \$basedir,
+		      "no-unlink" => \$no_unlink,
+		      "no-load" => \$no_load,
 		      "verbose+" => \$verbose,
 		      "help" => \$help) or pod2usage(2);
 
@@ -164,11 +185,16 @@ die "to few arguments" if ($#ARGV < 1);
 
 mkdir ".data" unless (-d ".data");
 
-$syncname = "git2svn-syncpoint-${branch}";
+die "cant find branch name" unless ($branch =~ m@/?([^/]+)$@);
+my $shortbranch = $1;
 
-my $gitdump = ".data/git.dump-${branch}";
-my $svndump = ".data/svn.dump-${branch}";
-my $log = ".data/log-${branch}";
+$syncname = "git2svn-syncpoint-${shortbranch}";
+
+print STDERR "syncname tag: $syncname\n" if ($verbose);
+
+my $gitdump = ".data/git.dump-${shortbranch}";
+my $svndump = ".data/svn.dump-${shortbranch}";
+my $log = ".data/log-${shortbranch}";
 
 $gittree = $ARGV[0];
 $svntree = $ARGV[1];
@@ -207,15 +233,15 @@ COMMAND: while (!eof(IN)) {
 	my %commit;
 
 	$next = next_line($IN);
-	if ($next =~ m/mark (.*)/) {
+	if ($next =~ m/mark +(.*)/) {
 	    $mark = $1;
 	    $next = next_line($IN);
 	}
-	if ($next =~ m/author (.*)/) {
+	if ($next =~ m/author +(.*)/) {
 	    $commit{author} = $1;
 	    $next = next_line($IN);
 	}
-	unless ($next =~ m/committer (.+) <([^>]+)> (\d+) \+(\d+)$/) {
+	unless ($next =~ m/committer +(.+) +<([^>]+)> +(\d+) +\+(\d+)$/) {
 	    die "missing comitter" 
 	}
 
@@ -318,7 +344,8 @@ COMMAND: while (!eof(IN)) {
 	    } elsif ($next =~ m/D (.*)/) {
 		my $path = $1;
 
-		die "deleting non existing object" unless ($paths{$path});
+		die "deleting non existing object: $path" 
+		    unless ($paths{$path});
 
 		delete $paths{$path};
 
@@ -362,15 +389,19 @@ close OUT;
 
 print STDERR "(re-)setting sync-tag to new master\n" if ($verbose);
 
-system("cd $gittree && ".
-       "git tag -m \"sync $(date)\" -a -f ${syncname} ${masterrev}");
+unless ($no_load) {
+    system("cd $gittree && ".
+	   "git tag -m \"sync $(date)\" -a -f ${syncname} ${masterrev}");
+}
 
 print STDERR "loading dump into svn\n" if ($verbose);
 
-system("svnadmin load $svntree < $svndump >>$log 2>&1") == 0 or 
-    die "svnadmin load";
+unless ($no_load) {
+    system("svnadmin load $svntree < $svndump >>$log 2>&1") == 0 or 
+	die "svnadmin load";
+}
 
-unlink $svndump, $gitdump, $log;
+unlink $svndump, $gitdump, $log unless ($no_unlink);
 
 exit 0;
 

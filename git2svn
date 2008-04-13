@@ -471,4 +471,12 @@ git2svn is avaible from repo.or.cz
 
 	git clone git://repo.or.cz/git2svn.git
 
+=head1 AUTHORS
+
+	Love Hörnquist Åstrand <lha@kth.se>
+
+=head1 BUGS
+
+	Send bug reports to lha@kth.se
+
 =cut

@@ -385,7 +385,7 @@ git2svn - converts a git branch to a svn ditto
 
 git2svn [options] git-repro svn-repro
 
-=head OPTIONS
+=head1 OPTIONS
 
 =over 8
 
@@ -413,5 +413,29 @@ Print a brief help message and exits.
 B<This program> will convert a git branch to a svn ditto, it also
 support incremantal updates.
 
-=cut
+git2svn takes a git fast-export dump and converts it into a svn dump
+that is feed into svnadmin load.
 
+git2svn assumes its the only process that writes into the svn
+repository. This is because of the race between getting the to svn
+Revsion number from the svn, creating the dump with correct Revsions,
+and do the svnadmin load.
+
+git2svn also support incremental updates from a git branch to a svn
+reprositry. Its does this by setting a git tag
+(git2svn-syncpoint-<branchname>) where the last update was pulled from.
+
+=head1 EXAMPLES
+
+	./git2svn ~/src/heimdal svn-repro
+	./git2svn --git-branch heimdal-1-0-branch \
+	          --svn-prefix branches/heimdal-1-0-branch \
+		~/src/heimdal svn-repro
+
+=head1 DOWNLOAD
+
+git2svn is avaible from repo.or.cz
+
+	git clone git://repo.or.cz/git2svn.git
+
+=cut

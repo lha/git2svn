@@ -67,12 +67,13 @@ sub parse_svn_tree
 
     open(SVN, "svn ls -R $url|") or die "failed to open svn ls -R $url";
     while (<SVN>) {
-	if (m@/(.*)/$@) {
+	chomp;
+	if (m@/?(.*)/$@) {
 	    $type = 1;
-	    $name = "$basedir/$1";
+	    $name = "$1";
 	} else {
 	    $type = 2;
-	    $name = "$basedir/$_";
+	    $name = "$_";
 	}
 	$paths{$name} = $type;
     }

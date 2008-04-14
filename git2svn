@@ -94,35 +94,32 @@ sub find_branch_id
 {
     my $name = shift;
 
-    foreach my $m ("heads", "remotes") {
-	my $n = "${gittree}/.git/refs/${m}/${name}";
-	my $ID;
-	next unless (-f $n);
-	open FOO, "$n";
-	my $id = <FOO>;
-	chomp($id);
-	close FOO;
-	return $id;
-    }
-    return undef;
+    my $GIT;
+
+    open FOO, "cd $gittree ".
+	"&& git rev-list --max-count=1 $name 2>/dev/null|" or
+	die "git rev-list $name failed";
+    
+    my $id = <FOO>;
+    close GIT;
+    chomp($id);
+    return $id;
 }
 
 sub parse_git_tree
 {
     $masterrev = find_branch_id($branch);
+    die "missing id for $branch" if ($masterrev eq "");
 
     die "No head found for ${branch}" if ($masterrev eq "");
 
-    my $syncpoint="${gittree}/.git/refs/tags/${syncname}";
+    my $oldmasterrev = find_branch_id($syncname);
 
-    if (-f ${syncpoint}) {
-	my $oldmasterrev=`cat ${syncpoint}`;
-	chomp($oldmasterrev);
-
-	die "failed to get old parse name" if ($oldmasterrev eq "");
+    if ($oldmasterrev ne "") {
 
 	if (${oldmasterrev} eq ${masterrev}) {
-	    print STDERR "nothing to sync\n" if ($verbose);
+	    print STDERR "nothing to sync, $syncname matches $branch\n" 
+		if ($verbose);
 	    exit 0;
 	}
 
@@ -393,6 +390,7 @@ COMMAND: while (!eof(IN)) {
 close IN;
 close OUT;
 
+print STDERR "...dumped to revision $revision\n" if ($verbose);
 print STDERR "(re-)setting sync-tag to new master\n" if ($verbose);
 
 unless ($no_load) {

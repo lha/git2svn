@@ -118,15 +118,15 @@ sub parse_git_tree
 
     if ($oldmasterrev ne "") {
 
+	die "no $svntree, but incremental (have synctag) ?\n".
+	    "(\"cd $gittree && git tag -d $syncname\" to remove)" 
+	    unless ( -d $svntree);
+
 	if (${oldmasterrev} eq $masterrev) {
 	    print STDERR "nothing to sync, $syncname matches $branch\n" 
 		if ($verbose);
 	    exit 0;
 	}
-
-	die "no $svntree, but incremental (have synctag) ?\n".
-	    "(\"cd $gittree && git tag -d $syncname\" to remove)" 
-	    unless ( -d $svntree);
 
 	$fexport = "$oldmasterrev..$masterrev";
     } else {

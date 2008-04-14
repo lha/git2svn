@@ -24,7 +24,7 @@ use Pod::Usage;
 my $IN;
 my $OUT;
 
-my ($help, $verbose, $no_unlink, $no_load);
+my ($help, $verbose, $keeplogs, $no_load);
 
 # svn
 my $svntree = "repro";
@@ -175,7 +175,7 @@ $|= 1;
 my $result;
 $result = GetOptions ("git-branch=s" => \$branch,
 		      "svn-prefix=s" => \$basedir,
-		      "no-unlink" => \$no_unlink,
+		      "keep-logs" => \$keeplogs,
 		      "no-load" => \$no_load,
 		      "verbose+" => \$verbose,
 		      "help" => \$help) or pod2usage(2);
@@ -407,7 +407,7 @@ unless ($no_load) {
 	die "svnadmin load";
 }
 
-unlink $svndump, $gitdump, $log unless ($no_unlink);
+unlink $svndump, $gitdump, $log unless ($keeplogs);
 
 exit 0;
 
@@ -426,20 +426,28 @@ git2svn [options] git-repro svn-repro
 
 =over 8
 
-=item B<-git-branch>
+=item B<--git-branch>
 
 The git branch to export. The default is branch is master.
 
-=item B<-svn-prefix>
+=item B<--svn-prefix>
 
 The svn prefix where the branch is import. The default is trunk to
 match the default GIT branch (master).
 
-=item B<-verbose>
+=item B<--no-load>
+
+Don't load the svn repository or update the syncpoint tagname.
+
+=item B<--keep-logs>
+
+Don't delete the logs in $CWD/.data on success.
+
+=item B<--verbose>
 
 More verbose output, can be give more then once to increase the verbosity.
 
-=item B<-help>
+=item B<--help>
 
 Print a brief help message and exits.
 

@@ -33,11 +33,9 @@ my $revision = 1;
 
 # git
 my $branch = "master";
-my $gittree;
 my $syncname;
 my $masterrev;
 my $fexport;
-
 
 my %blob;
 my %paths;
@@ -92,7 +90,7 @@ sub parse_svn_tree
 
 sub find_branch_id
 {
-    my $name = shift;
+    my ($gittree, $name) = (shift, shift);
 
     my $GIT;
 
@@ -108,16 +106,19 @@ sub find_branch_id
 
 sub parse_git_tree
 {
-    $masterrev = find_branch_id($branch);
-    die "missing id for $branch" if ($masterrev eq "");
+    my ($gittree, $branch, $shortbranch) = (shift, shift, shift);
 
+    $syncname = "git2svn-syncpoint-${shortbranch}";
+    print STDERR "syncname tag: $syncname\n" if ($verbose);
+
+    $masterrev = find_branch_id($gittree, $branch);
     die "No head found for ${branch}" if ($masterrev eq "");
 
-    my $oldmasterrev = find_branch_id($syncname);
+    my $oldmasterrev = find_branch_id($gittree, $syncname);
 
     if ($oldmasterrev ne "") {
 
-	if (${oldmasterrev} eq ${masterrev}) {
+	if (${oldmasterrev} eq $masterrev) {
 	    print STDERR "nothing to sync, $syncname matches $branch\n" 
 		if ($verbose);
 	    exit 0;
@@ -129,7 +130,7 @@ sub parse_git_tree
 
 	$fexport = "$oldmasterrev..$masterrev";
     } else {
-	$fexport="${masterrev}";
+	$fexport="$masterrev";
 
 	system("svnadmin create ./$svntree") unless (-d $svntree);
     }
@@ -186,18 +187,14 @@ mkdir ".data" unless (-d ".data");
 die "cant find branch name" unless ($branch =~ m@/?([^/]+)$@);
 my $shortbranch = $1;
 
-$syncname = "git2svn-syncpoint-${shortbranch}";
-
-print STDERR "syncname tag: $syncname\n" if ($verbose);
-
 my $gitdump = ".data/git.dump-${shortbranch}";
 my $svndump = ".data/svn.dump-${shortbranch}";
 my $log = ".data/log-${shortbranch}";
 
-$gittree = $ARGV[0];
+my $gittree = $ARGV[0];
 $svntree = $ARGV[1];
 
-parse_git_tree($gittree);
+parse_git_tree($gittree, $branch, $shortbranch);
 
 my $cwd = `pwd`;
 chomp($cwd);

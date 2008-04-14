@@ -416,11 +416,11 @@ __END__
 
 =head1 NAME
 
-git2svn - converts a git branch to a svn ditto
+B<git2svn> - converts a git branch to a svn ditto
 
 =head1 SYNOPSIS
 
-git2svn [options] git-repro svn-repro
+B<git2svn> [options] git-repro svn-repro
 
 =head1 OPTIONS
 
@@ -455,37 +455,37 @@ Print a brief help message and exits.
 
 =head1 DESCRIPTION
 
-B<This program> will convert a git branch to a svn ditto, it also
+B<git2svn> will convert a git branch to a svn ditto, it also
 support incremantal updates.
 
-B<This program> takes a git fast-export dump and converts it into a
+B<git2svn> takes a git fast-export dump and converts it into a
 svn dump that is feed into svnadmin load.
 
-B<This program> assumes its the only process that writes into the svn
+B<git2svn> assumes its the only process that writes into the svn
 repository. This is because of the race between getting the to svn
 Revsion number from the svn, creating the dump with correct Revsions,
 and do the svnadmin load.
 
-B<This program> also support incremental updates from a git branch to
+B<git2svn> also support incremental updates from a git branch to
 a svn reprositry. Its does this by setting a git tag
 (git2svn-syncpoint-<branchname>) where the last update was pulled
 from.
 
-B<This program> was created as a hack over a weekend to support a
+B<git2svn> was created as a hack over a weekend to support a
 smoother migration away from svn and allow users access to tools to
 browse and search code (fisheye) and use anonymouns svn servers.
 
 =head1 EXAMPLES
 
-	git2svn ~/src/heimdal svn-repro
+	B<git2svn> ~/src/heimdal svn-repro
 
-	git2svn --git-branch heimdal-1-0-branch \
+	B<git2svn> --git-branch heimdal-1-0-branch \
              --svn-prefix branches/heimdal-1-0-branch \
 	     ~/src/heimdal svn-repro
 
 =head1 DOWNLOAD
 
-git2svn is avaible from repo.or.cz
+B<git2svn> is avaible from repo.or.cz
 
 	git clone git://repo.or.cz/git2svn.git
 

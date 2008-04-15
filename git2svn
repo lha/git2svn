@@ -95,8 +95,8 @@ sub find_branch_id
     my $GIT;
 
     open FOO, "cd $gittree ".
-	"&& git rev-list --max-count=1 $name 2>/dev/null|" or
-	die "git rev-list $name failed";
+	"&& git rev-parse $name 2>/dev/null|" or
+	die "git rev-parse $name failed";
     
     my $id = <FOO>;
     close GIT;

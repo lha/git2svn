@@ -101,6 +101,7 @@ sub find_branch_id
     my $id = <FOO>;
     close GIT;
     chomp($id);
+    $id = "" if ($id eq $name);
     return $id;
 }
 

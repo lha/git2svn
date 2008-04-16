@@ -219,7 +219,6 @@ print OUT "SVN-fs-dump-format-version: 3\n";
 
 my $next = next_line();
 COMMAND: while (!eof(IN)) {
-    my $mark = undef;
     if ($next eq "") {
 	$next = next_line($IN);
 	next COMMAND;
@@ -229,11 +228,11 @@ COMMAND: while (!eof(IN)) {
 
 	$next = next_line($IN);
 	if ($next =~ m/mark +(.*)/) {
-	    $mark = $1;
+	    $commit{Mark} = $1;
 	    $next = next_line($IN);
 	}
 	if ($next =~ m/author +(.*)/) {
-	    $commit{author} = $1;
+	    $commit{Author} = $1;
 	    $next = next_line($IN);
 	}
 	unless ($next =~ m/committer +(.+) +<([^>]+)> +(\d+) +[+-](\d+)$/) {
@@ -250,9 +249,11 @@ COMMAND: while (!eof(IN)) {
 
 	$next = next_line($IN);
 	if ($next =~ m/from (.*)/) {
+	    $commit{From} = $1;
 	    $next = next_line($IN);
 	}
 	if ($next =~ m/merge (.*)/) {
+	    $commit{Merge} = $1;
 	    $next = next_line($IN);
 	}
 
@@ -368,6 +369,7 @@ COMMAND: while (!eof(IN)) {
     } elsif ($next =~ /^tag .*/) {
     } elsif ($next =~ /^reset .*/) {
     } elsif ($next =~ /^blob/) {
+	my $mark = undef;
 	$next = next_line($IN);
 	if ($next =~ m/mark (.*)/) {
 	    $mark = $1;

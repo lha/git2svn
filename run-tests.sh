@@ -29,6 +29,6 @@ svn=file://`pwd`/repro
 svn ls $svn | grep trunk > /dev/null || exit 1
 svn ls $svn/branches | grep heimdal-1-1-branch > /dev/null || exit 1
 
-echo "all tests passed"
+echo "####all tests passed"
 
 exit 0

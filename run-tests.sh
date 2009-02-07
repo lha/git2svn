@@ -1,10 +1,29 @@
 #!/bin/sh
 
-rm -rf repro
-
 gitrepro=/Users/lha/src/heimdal/git-trunk
 
-(cd $gitrepro && git tag -d git2svn-syncpoint-master)
+incremental=no
+
+usage="-i"
+
+while true
+do
+  case $1 in
+  -i) incremental="yes"; shift ;;
+  -*) echo "$0: Bad option $1"; echo $usage; exit 1;;
+  *) break;;
+  esac
+done
+if test $# -ne 0; then
+  echo $usage
+  exit 1
+fi
+
+if [ "$incremental" = no ] ; then
+	rm -rf repro
+	(cd $gitrepro && git tag -d git2svn-syncpoint-master)
+	(cd $gitrepro && git tag -d git2svn-syncpoint-heimdal-1-1-branch)
+fi
 
 echo "####full import of master -> trunk"
 ./git2svn \

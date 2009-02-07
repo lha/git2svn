@@ -2,25 +2,26 @@
 
 rm -rf repro
 
+gitrepro=/Users/lha/src/heimdal/git-trunk
+
+(cd $gitrepro && git tag -d git2svn-syncpoint-master)
+
 echo "####full import of master -> trunk"
 ./git2svn \
      --verbose \
-     --no-unlink \
-     /Users/lha/src/heimdal/git-trunk repro || exit 1
+     $gitrepro repro || exit 1
 
 echo "####full import of branch -> branches/heimdal-1-1-branch"
 ./git2svn \
      --verbose \
-     --no-unlink \
      --svn-prefix=branches/heimdal-1-1-branch \
      --git-branch=heimdal-1-1-branch \
-     /Users/lha/src/heimdal/git-trunk repro || exit 1
+     $gitrepro repro || exit 1
 
 echo "####incremental import of master -> trunk"
 ./git2svn \
      --verbose \
-     --no-unlink \
-    /Users/lha/src/heimdal/git-trunk repro || exit 1
+    $gitrepro repro || exit 1
 
 echo "####test that repro looks ok at a glance"
 

@@ -80,9 +80,8 @@ sub parse_svn_tree
     open(SVN, "svn info $url|") or die "failed to open svn info $url";
     while (<SVN>) {
 	chomp;
-	if (/^Revision: (\d+)/) {
+	if ($revision eq 1 && /^Revision: (\d+)/) {
 	    $revision = $1 + 1;
-	    last;
 	}
     }
     close SVN;
@@ -168,6 +167,19 @@ sub next_line
     chomp $next;
     return $next;
 }
+
+#
+# This is to allow setting props for a path, XXX add configuration
+# file/options for this.
+#
+
+sub auto_props
+{
+    my $path = shift;
+    ### given path, return prop("prop", "value")
+    return "";
+}
+
 
 $|= 1;
 
@@ -323,6 +335,7 @@ COMMAND: while (!eof(IN)) {
 		$props = "";
 		$props .= prop("svn:executable", "on") if ($mode & 0111);
 		$props .= prop("svn:special", "*") if ($kind eq "symlink");
+		$props .= auto_props($path);
 		$props .= "PROPS-END" if ($props ne "");
 
 		$content = "link $content" if ($kind eq "symlink");

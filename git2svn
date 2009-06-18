@@ -212,12 +212,17 @@ mkdir ".data" unless (-d ".data");
 die "cant find branch name" unless ($branch =~ m@/?([^/]+)$@);
 my $shortbranch = $1;
 
-my $gitdump = ".data/git.dump-${shortbranch}";
-my $svndump = ".data/svn.dump-${shortbranch}";
-my $log = ".data/log-${shortbranch}";
-
 my $gittree = $ARGV[0];
 $svntree = $ARGV[1];
+
+# create an identifier by replacing path separators
+# (i.e. "/", ":" and "\") with underscores
+my $svntree_id = $svntree;
+$svntree_id =~ s/[\/:\\]/_/g;
+
+my $gitdump = ".data/git.dump-${svntree_id}-${shortbranch}";
+my $svndump = ".data/svn.dump-${svntree_id}-${shortbranch}";
+my $log = ".data/log-${svntree_id}-${shortbranch}";
 
 parse_git_tree($gittree, $branch, $shortbranch);
 

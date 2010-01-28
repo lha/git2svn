@@ -319,10 +319,14 @@ COMMAND: while (!eof(IN)) {
 		    $next = next_line($IN);
 		    $content = read_data($IN, $next);
 		} else {
-		    die "Revision missing content ref $dataref" 
-			unless(defined $blob{$dataref});
-
-		    $content = $blob{$dataref};
+		    if (defined $blob{$dataref}) {
+		    	$content = $blob{$dataref};
+		    } else {
+				# Submodules cannot be converted
+				print STDERR "Ignored line, please check if this is a submodule: $next\n" if ($verbose);
+				$next = next_line($IN);
+				next;
+		    }
 		    # here we really want to delete $blob{$dataref},
 		    # but it might be referenced in the future. To
 		    # avoid keepig everything in memory for larger
@@ -335,15 +339,25 @@ COMMAND: while (!eof(IN)) {
 
 		my $action = "add";
 
+		my $type = $mode & 0777000;
+
 		if ($paths{$path}) {
-		    die "file was a dir" if ($paths{$path} != 2);
-		    $action = "change";
+		    if (($paths{$path} != 2) && ($type != 0120000)) {
+				die "file was a dir";
+		    } elsif (($paths{$path} != 2) && ($type == 0120000)) {
+				print STDERR "Dir is now a symlink, deleting: $path\n" if ($verbose);
+			    foreach ( keys( %paths ) ) {
+    	        	delete $paths{$_} if ( /^$path/ );
+				}
+				printf OUT "Node-path: $path\nNode-action: delete\n\n";
+		    } else {
+		      $action = "change";
+		    }
 		} else {
 		    $paths{$path} = 2;
 		}
 
 
-		my $type = $mode & 0777000;
 		my $kind = "";
 		$kind = "file" if ($type == 0100000);
 		$kind = "symlink" if ($type == 0120000);
@@ -353,9 +367,9 @@ COMMAND: while (!eof(IN)) {
 		$props .= prop("svn:executable", "on") if ($mode & 0111);
 		$props .= prop("svn:special", "*") if ($kind eq "symlink");
 		$props .= auto_props($path);
-		$props .= "PROPS-END" if ($props ne "");
+		$props .= "PROPS-END\n" if ($props ne "");
 
-		$content = "link $content" if ($kind eq "symlink");
+		$content = "link $content\n" if ($kind eq "symlink");
 
 		my $plen = length($props);
 		my $clen = length($content);
@@ -368,7 +382,7 @@ COMMAND: while (!eof(IN)) {
 		printf OUT "Prop-content-length: $plen\n" if ($plen);
 		printf OUT "\n";
 		
-		print OUT "$props\n" if ($plen);
+		print OUT "$props" if ($plen);
 
 		print OUT $content;
 		printf OUT "\n";
@@ -376,7 +390,9 @@ COMMAND: while (!eof(IN)) {
 		my $path = $basedir . "/". $1;
 
 		if ($paths{$path}) {
-		    delete $paths{$path};
+		    foreach ( keys( %paths ) ) {
+            	delete $paths{$_} if ( /^$path/ );
+			}
 		    
 		    printf OUT "Node-path: $path\n";
 		    printf OUT "Node-action: delete\n";

@@ -346,8 +346,9 @@ COMMAND: while (!eof(IN)) {
 				die "file was a dir";
 		    } elsif (($paths{$path} != 2) && ($type == 0120000)) {
 				print STDERR "Dir is now a symlink, deleting: $path\n" if ($verbose);
+			    delete $paths{$path};
 			    foreach ( keys( %paths ) ) {
-    	        	delete $paths{$_} if ( /^$path/ );
+    	        	delete $paths{$_} if ( /^$path\// );
 				}
 				# This is now a file and not a path anymore
 				$paths{$path} = 2;
@@ -392,8 +393,9 @@ COMMAND: while (!eof(IN)) {
 		my $path = $basedir . "/". $1;
 
 		if ($paths{$path}) {
+		    delete $paths{$path};
 		    foreach ( keys( %paths ) ) {
-            	delete $paths{$_} if ( /^$path/ );
+            	delete $paths{$_} if ( /^$path\// );
 			}
 		    
 		    printf OUT "Node-path: $path\n";

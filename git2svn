@@ -349,6 +349,8 @@ COMMAND: while (!eof(IN)) {
 			    foreach ( keys( %paths ) ) {
     	        	delete $paths{$_} if ( /^$path/ );
 				}
+				# This is now a file and not a path anymore
+				$paths{$path} = 2;
 				printf OUT "Node-path: $path\nNode-action: delete\n\n";
 		    } else {
 		      $action = "change";

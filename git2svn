@@ -346,7 +346,6 @@ COMMAND: while (!eof(IN)) {
 				die "file was a dir";
 		    } elsif (($paths{$path} != 2) && ($type == 0120000)) {
 				print STDERR "Dir is now a symlink, deleting: $path\n" if ($verbose);
-			    delete $paths{$path};
 			    foreach ( keys( %paths ) ) {
     	        	delete $paths{$_} if ( /^$path\// );
 				}

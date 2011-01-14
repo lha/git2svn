@@ -36,7 +36,7 @@ use Pod::Usage;
 my $IN;
 my $OUT;
 
-my ($help, $verbose, $keeplogs, $no_load);
+my ($help, $verbose, $keeplogs, $no_load, $ignore_author);
 
 # svn
 my $svntree = "repro";
@@ -200,6 +200,7 @@ $result = GetOptions ("git-branch=s" => \$branch,
 		      "svn-prefix=s" => \$basedir,
 		      "keep-logs" => \$keeplogs,
 		      "no-load" => \$no_load,
+		      "ignore-author" => \$ignore_author,
 		      "verbose+" => \$verbose,
 		      "help" => \$help) or pod2usage(2);
 
@@ -261,12 +262,15 @@ COMMAND: while (!eof(IN)) {
 	    $commit{Mark} = $1;
 	    $next = next_line($IN);
 	}
-	if ($next =~ m/author +(.*)/) {
-	    $commit{Author} = $1;
+	if ($next =~ m/author +(.+) +<([^>]+)> +(\d+) +[+-](\d+)$/) {
+	    $commit{AuthorName} = $1;
+	    $commit{AuthorEmail} = $2;
+	    $commit{AuthorWhen} = $3;
+	    $commit{AuthorTZ} = $4;
 	    $next = next_line($IN);
 	}
 	unless ($next =~ m/committer +(.+) +<([^>]+)> +(\d+) +[+-](\d+)$/) {
-	    die "missing comitter: $_";
+	    die "missing committer: $_";
 	}
 
 	$commit{CommitterName} = $1;
@@ -291,11 +295,15 @@ COMMAND: while (!eof(IN)) {
 	    strftime("%Y-%m-%dT%H:%M:%S.000000Z", 
 		     gmtime($commit{CommitterWhen}));
 
-	my $author = "(no author)";
+	my $author = "git2svn-dump";
 	if ($commit{CommitterEmail} =~ m/([^@]+)/) {
 	    $author = $1;
 	}
-	$author = "git2svn-dump" if ($author eq "(no author)");
+	unless ($ignore_author) {
+	    if ($commit{AuthorEmail} =~ m/([^@]+)/) {
+	        $author = $1;
+	    }
+	}
 
 	my $props = "";
 	$props .= prop("svn:author", $author);
@@ -485,6 +493,11 @@ match the default GIT branch (master).
 =item B<--no-load>
 
 Don't load the svn repository or update the syncpoint tagname.
+
+=item B<--ignore-author>
+
+Ignore "author" lines in the fast-import stream. Use "committer"
+information instead.
 
 =item B<--keep-logs>
 

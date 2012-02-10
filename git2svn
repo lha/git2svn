@@ -192,6 +192,11 @@ sub auto_props
     return "";
 }
 
+sub isPrefix
+{
+	my ($prefix, $string) = (shift, shift);
+	return $prefix eq substr($string, 0, length($prefix));
+}
 
 $|= 1;
 
@@ -402,8 +407,9 @@ COMMAND: while (!eof(IN)) {
 
 		if ($paths{$path}) {
 		    delete $paths{$path};
+		    $path .= "/";
 		    foreach ( keys( %paths ) ) {
-            	delete $paths{$_} if ( /^$path\// );
+		        delete $paths{$_} if ( isPrefix($path, $_) );
 			}
 		    
 		    printf OUT "Node-path: $path\n";

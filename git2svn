@@ -280,6 +280,7 @@ COMMAND: while (!eof(IN)) {
 
 	$next = next_line($IN);
 	my $log = read_data($IN, $next);
+	$log =~ s/\s+$//;
 
 	$next = next_line($IN);
 	if ($next =~ m/from (.*)/) {

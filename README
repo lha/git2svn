@@ -52,9 +52,16 @@ EXAMPLES
                  ~/src/heimdal svn-repro
 
 DOWNLOAD
-    git2svn is avaible from repo.or.cz
+    git2svn is avaible from repo.or.cz or github
 
             git clone git://repo.or.cz/git2svn.git
+
+	    https://github.com/lha/git2svn
+
+    If you want to do the reverse covert svn to git, you might want to use
+
+
+	    http://barrbrain.github.com/svn-dump-fast-export/
 
 AUTHORS
 

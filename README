@@ -57,8 +57,16 @@ DOWNLOAD
             git clone git://repo.or.cz/git2svn.git
 
 AUTHORS
-            Love Hörnquist Åstrand <lha@kth.se>
+
+	Love Hörnquist Åstrand <lha@kth.se>
+	Neil Mayhew <neil_mayhew@sil.org>
+	Ramkumar Ramachandra <artagnon@gmail.com>
+	Ortwin Escher <hurz@oe-extern.plan.vfnet.de>
+	Andreas Oberritter <obi@saftware.de>
+	Dennis McRichie
+
+	and we hope that those not mentioned here will forgive us
 
 BUGS
-            Send bug reports to lha@kth.se
 
+	Send bug reports to lha@kth.se

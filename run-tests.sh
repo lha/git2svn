@@ -1,6 +1,6 @@
 #!/bin/sh
 
-gitrepro=/Users/lha/src/heimdal/git-trunk
+gitrepro=$HOME/src/heimdal/git
 
 incremental=no
 

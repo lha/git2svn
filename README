@@ -1,15 +1,15 @@
 NAME
-    git2svn - converts a git branch to a svn ditto
+    git2svn - converts a git branch to a svn branch
 
 SYNOPSIS
-    git2svn [options] git-repro svn-repro
+    git2svn [options] git-repo svn-repo
 
 OPTIONS
     --git-branch
             The git branch to export. The default is branch is master.
 
     --svn-prefix
-            The svn prefix where the branch is import. The default is trunk
+            The svn prefix where the branch is imported. The default is trunk
             to match the default GIT branch (master).
 
     --no-load
@@ -19,30 +19,30 @@ OPTIONS
             Don't delete the logs in $CWD/.data on success.
 
     --verbose
-            More verbose output, can be give more then once to increase the
+            More verbose output, can be given more then once to increase the
             verbosity.
 
-    --help  Print a brief help message and exits.
+    --help  Prints a brief help message and exits.
 
 DESCRIPTION
-    git2svn will convert a git branch to a svn ditto, it also support
-    incremantal updates.
+    git2svn will convert a git branch to a svn branch, it also supports
+    incremental updates.
 
     git2svn takes a git fast-export dump and converts it into a svn dump
-    that is feed into svnadmin load.
+    that is fed into svnadmin load.
 
-    git2svn assumes its the only process that writes into the svn
+    git2svn assumes it's the only process that writes into the svn
     repository. This is because of the race between getting the to svn
-    Revsion number from the svn, creating the dump with correct Revsions,
+    Revision number from svn, creating the dump with correct Revisions,
     and do the svnadmin load.
 
-    git2svn also support incremental updates from a git branch to a svn
-    reprositry. Its does this by setting a git tag
+    git2svn also supports incremental updates from a git branch to a svn
+    repository. It does this by setting a git tag
     (git2svn-syncpoint-<branchname>) where the last update was pulled from.
 
     git2svn was created as a hack over a weekend to support a smoother
     migration away from svn and allow users access to tools to browse and
-    search code (fisheye) and use anonymouns svn servers.
+    search code (fisheye) and use anonymous svn servers.
 
 EXAMPLES
             B<git2svn> ~/src/heimdal svn-repro
@@ -58,7 +58,8 @@ DOWNLOAD
 
 	    https://github.com/lha/git2svn
 
-    If you want to do the reverse covert svn to git, you might want to use
+    If you want to do the reverse and convert from svn to git, you might want 
+    to use
 
 
 	    http://barrbrain.github.com/svn-dump-fast-export/

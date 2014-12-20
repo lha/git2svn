@@ -478,11 +478,11 @@ __END__
 
 =head1 NAME
 
-B<git2svn> - converts a git branch to a svn ditto
+B<git2svn> - converts a git branch to a svn branch
 
 =head1 SYNOPSIS
 
-B<git2svn> [options] git-repro svn-repro
+B<git2svn> [options] git-repo svn-repo
 
 =head1 OPTIONS
 
@@ -494,53 +494,53 @@ The git branch to export. The default is branch is master.
 
 =item B<--svn-prefix>
 
-The svn prefix where the branch is import. The default is trunk to
+The svn prefix where the branch is imported. The default is trunk to
 match the default GIT branch (master).
 
 =item B<--no-load>
 
 Don't load the svn repository or update the syncpoint tagname.
 
+=item B<--keep-logs>
+
+Don't delete the logs in $CWD/.data on success.
+
 =item B<--ignore-author>
 
 Ignore "author" lines in the fast-import stream. Use "committer"
 information instead.
 
-=item B<--keep-logs>
-
-Don't delete the logs in $CWD/.data on success.
-
 =item B<--verbose>
 
-More verbose output, can be give more then once to increase the verbosity.
+More verbose output, can be used more then once to increase the verbosity.
 
 =item B<--help>
 
-Print a brief help message and exits.
+Prints a brief help message and exits.
 
 =back
 
 =head1 DESCRIPTION
 
-B<git2svn> will convert a git branch to a svn ditto, it also
-support incremantal updates.
+B<git2svn> will convert a git branch to a svn branch, it also
+support incremental updates.
 
 B<git2svn> takes a git fast-export dump and converts it into a
-svn dump that is feed into svnadmin load.
+svn dump that is fed into svnadmin load.
 
-B<git2svn> assumes its the only process that writes into the svn
+B<git2svn> assumes it's the only process that writes into the svn
 repository. This is because of the race between getting the to svn
-Revsion number from the svn, creating the dump with correct Revsions,
+Revision number from the svn, creating the dump with correct Revisions,
 and do the svnadmin load.
 
-B<git2svn> also support incremental updates from a git branch to
-a svn reprositry. Its does this by setting a git tag
+B<git2svn> also supports incremental updates from a git branch to
+a svn repository. It does this by setting a git tag
 (git2svn-syncpoint-<branchname>) where the last update was pulled
 from.
 
 B<git2svn> was created as a hack over a weekend to support a
 smoother migration away from svn and allow users access to tools to
-browse and search code (fisheye) and use anonymouns svn servers.
+browse and search code (fisheye) and use anonymous svn servers.
 
 =head1 EXAMPLES
 
@@ -552,13 +552,26 @@ browse and search code (fisheye) and use anonymouns svn servers.
 
 =head1 DOWNLOAD
 
-B<git2svn> is avaible from repo.or.cz
+B<git2svn> is avaible from github
 
-	git clone git://repo.or.cz/git2svn.git
+	https://github.com/lha/git2svn
+
+    If you want to do the reverse and convert from svn to git, you
+    might want to use
+
+	    http://barrbrain.github.com/svn-dump-fast-export/
 
 =head1 AUTHORS
 
 	Love Hörnquist Åstrand <lha@kth.se>
+	Neil Mayhew <neil_mayhew@sil.org>
+	Ramkumar Ramachandra <artagnon@gmail.com>
+	Ortwin Escher <hurz@oe-extern.plan.vfnet.de>
+	Andreas Oberritter <obi@saftware.de>
+	Dennis McRichie
+	Remco Rijnders <remco@webconquest.com>
+
+	and we hope that those not mentioned here will forgive us
 
 =head1 BUGS
 

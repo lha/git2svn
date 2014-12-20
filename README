@@ -9,8 +9,8 @@ OPTIONS
             The git branch to export. The default is branch is master.
 
     --svn-prefix
-            The svn prefix where the branch is imported. The default is trunk
-            to match the default GIT branch (master).
+            The svn prefix where the branch is imported. The default is
+            trunk to match the default GIT branch (master).
 
     --no-load
             Don't load the svn repository or update the syncpoint tagname.
@@ -18,14 +18,18 @@ OPTIONS
     --keep-logs
             Don't delete the logs in $CWD/.data on success.
 
+    --ignore-author
+            Ignore "author" lines in the fast-import stream. Use "committer"
+            information instead.
+
     --verbose
-            More verbose output, can be given more then once to increase the
+            More verbose output, can be used more then once to increase the
             verbosity.
 
     --help  Prints a brief help message and exits.
 
 DESCRIPTION
-    git2svn will convert a git branch to a svn branch, it also supports
+    git2svn will convert a git branch to a svn branch, it also support
     incremental updates.
 
     git2svn takes a git fast-export dump and converts it into a svn dump
@@ -33,7 +37,7 @@ DESCRIPTION
 
     git2svn assumes it's the only process that writes into the svn
     repository. This is because of the race between getting the to svn
-    Revision number from svn, creating the dump with correct Revisions,
+    Revision number from the svn, creating the dump with correct Revisions,
     and do the svnadmin load.
 
     git2svn also supports incremental updates from a git branch to a svn
@@ -52,29 +56,26 @@ EXAMPLES
                  ~/src/heimdal svn-repro
 
 DOWNLOAD
-    git2svn is avaible from repo.or.cz or github
+    git2svn is avaible from github
 
-            git clone git://repo.or.cz/git2svn.git
+            https://github.com/lha/git2svn
 
-	    https://github.com/lha/git2svn
+        If you want to do the reverse and convert from svn to git, you
+        might want to use
 
-    If you want to do the reverse and convert from svn to git, you might want 
-    to use
-
-
-	    http://barrbrain.github.com/svn-dump-fast-export/
+                http://barrbrain.github.com/svn-dump-fast-export/
 
 AUTHORS
+            Love Hörnquist Åstrand <lha@kth.se>
+            Neil Mayhew <neil_mayhew@sil.org>
+            Ramkumar Ramachandra <artagnon@gmail.com>
+            Ortwin Escher <hurz@oe-extern.plan.vfnet.de>
+            Andreas Oberritter <obi@saftware.de>
+            Dennis McRichie
+            Remco Rijnders <remco@webconquest.com>
 
-	Love Hörnquist Åstrand <lha@kth.se>
-	Neil Mayhew <neil_mayhew@sil.org>
-	Ramkumar Ramachandra <artagnon@gmail.com>
-	Ortwin Escher <hurz@oe-extern.plan.vfnet.de>
-	Andreas Oberritter <obi@saftware.de>
-	Dennis McRichie
-
-	and we hope that those not mentioned here will forgive us
+            and we hope that those not mentioned here will forgive us
 
 BUGS
+            Send bug reports to lha@kth.se
 
-	Send bug reports to lha@kth.se

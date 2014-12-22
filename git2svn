@@ -512,7 +512,7 @@ information instead.
 
 =item B<--verbose>
 
-More verbose output, can be used more then once to increase the verbosity.
+More verbose output.
 
 =item B<--help>
 

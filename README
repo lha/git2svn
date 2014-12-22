@@ -23,8 +23,7 @@ OPTIONS
             information instead.
 
     --verbose
-            More verbose output, can be used more then once to increase the
-            verbosity.
+            More verbose output.
 
     --help  Prints a brief help message and exits.
 

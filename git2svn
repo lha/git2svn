@@ -180,6 +180,16 @@ sub next_line
     return $next;
 }
 
+sub parse_path
+{
+    my $path = shift;
+    $path =~ /^"(.*)"$/ or return $path;
+    $path = $1;
+    $path =~ s/\\"/"/g;
+    $path =~ s/\\\\/\\/g;
+    return $path;
+}
+
 #
 # This is to allow setting props for a path, XXX add configuration
 # file/options for this.
@@ -327,7 +337,7 @@ COMMAND: while (!eof(IN)) {
 
 	while (1) {
 	    if ($next =~ m/M (\d+) (\S+) (.*)$/) {
-		my ($mode, $dataref, $path) = (oct $1, $2, $3);
+		my ($mode, $dataref, $path) = (oct $1, $2, parse_path($3));
 		my $content;
 		if ($dataref eq "inline") {
 		    $next = next_line($IN);
@@ -403,7 +413,7 @@ COMMAND: while (!eof(IN)) {
 		print OUT $content;
 		printf OUT "\n";
 	    } elsif ($next =~ m/D (.*)/) {
-		my $path = $basedir . "/". $1;
+		my $path = $basedir . "/" . parse_path($1);
 
 		if ($paths{$path}) {
 		    delete $paths{$path};

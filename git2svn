@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 #
 # git2svn, converts a git branch to a svn ditto
 #
@@ -48,6 +48,9 @@ my $branch = "master";
 my $syncname;
 my $masterrev;
 my $fexport;
+
+my %author_mapping;
+my $author_mapping_file = "";
 
 my %blob;
 my %paths;
@@ -216,12 +219,13 @@ $result = GetOptions ("git-branch=s" => \$branch,
 		      "keep-logs" => \$keeplogs,
 		      "no-load" => \$no_load,
 		      "ignore-author" => \$ignore_author,
+		      "author-mapping=s" => \$author_mapping_file,
 		      "verbose+" => \$verbose,
 		      "help" => \$help) or pod2usage(2);
 
 pod2usage(0) if ($help);
 
-die "to few arguments" if ($#ARGV < 1);
+die "too few arguments" if ($#ARGV < 1);
 
 mkdir ".data" unless (-d ".data");
 
@@ -235,6 +239,17 @@ $svntree = $ARGV[1];
 # (i.e. "/", ":" and "\") with underscores
 my $svntree_id = $svntree;
 $svntree_id =~ s/[\/:\\]/_/g;
+
+# parse any author mapping file
+if (length $author_mapping_file) {
+    open my $author_map, $author_mapping_file or die "Could not open author map $author_mapping_file: $!";
+    while (my $line = <$author_map>) {
+        chomp($line);
+        next if not length $line;
+        (my $word1,my $word2) = split ' ', $line;
+        $author_mapping{$word1} = $word2;
+    }
+}
 
 my $gitdump = ".data/git.dump-${svntree_id}-${shortbranch}";
 my $svndump = ".data/svn.dump-${svntree_id}-${shortbranch}";
@@ -312,15 +327,20 @@ COMMAND: while (!eof(IN)) {
 		     gmtime($commit{CommitterWhen}));
 
 	my $author = "git2svn-dump";
-	if ($commit{CommitterEmail} =~ m/([^@]+)/) {
-	    $author = $1;
-	}
+	my $email_addr = "";
+	$email_addr = $commit{CommitterEmail};
 	unless ($ignore_author) {
 	    if ($commit{AuthorEmail} =~ m/([^@]+)/) {
-	        $author = $1;
+	        $email_addr = $commit{AuthorEmail};
 	    }
 	}
-
+	if ($email_addr =~ m/([^@]+)/) {
+	    $author = $1;
+	}
+	if (exists($author_mapping{$email_addr})) {
+	    $author = $author_mapping{$email_addr};
+	}
+	    
 	my $props = "";
 	$props .= prop("svn:author", $author);
 	$props .= prop("svn:log", $log);
@@ -519,6 +539,14 @@ Don't delete the logs in $CWD/.data on success.
 
 Ignore "author" lines in the fast-import stream. Use "committer"
 information instead.
+
+=item B<--author-mapping>
+
+Path to a mapping file from e-mail address to SVN author ID, formatted as
+a 2-column tab-delimited text file. If the address for the author
+(or committer) is found here, use the value in the second column as the
+author ID. Otherwise, uses the first part of the e-mail address (e.g.
+you@example.com becomes "you").
 
 =item B<--verbose>
 
